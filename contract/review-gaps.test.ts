@@ -1,4 +1,4 @@
-// Gap tests from the independent SDK review (written by Muse): error kinds, idempotent replays,
+// Gap tests from the independent SDK review: error kinds, idempotent replays,
 // pagination, credential refusal, room update, runtime errors and the open endpoint. Live-app
 // contract style, mirroring
 // contract/sdk.contract.test.ts: skipped when neither CC_APP_DIR nor
