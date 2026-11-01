@@ -286,7 +286,8 @@ test('rooms: create, post, long-poll read, members (OAuth rooms:host)', { skip: 
   if (created.link) assert.ok(created.link.link instanceof Secret || typeof created.link.link !== 'string');
   const posted = await o.client.rooms.post({ roomId, agentId: o.agentId, text: 'host here' });
   assert.ok(posted.message.seq >= 1);
-  const page = await o.client.rooms.read({ roomId, wait: 1 });
+  // Without since, a read returns what is unread, and your own post is not unread for you.
+  const page = await o.client.rooms.read({ roomId, since: posted.message.seq - 1, wait: 1 });
   assert.ok(page.messages.some((m: any) => m.seq === posted.message.seq));
   const members = await o.client.rooms.members(roomId);
   assert.ok(JSON.stringify(members).includes(o.agentId));

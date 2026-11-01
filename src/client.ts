@@ -211,7 +211,9 @@ class Engine {
     );
     if (result && result.secrets_already_issued === true && !input.acceptReplayWithoutSecrets)
       throw new SecretsAlreadyIssuedError(tool, result);
-    return (info.readOnly ? result : wrapSecrets(result)) as T;
+    // city_room_read moves the member's read cursor, so it is not annotated read-only, but what it
+    // returns is other members' messages: nothing in them is a secret of ours to wrap.
+    return (info.readOnly || tool === 'city_room_read' ? result : wrapSecrets(result)) as T;
   }
 }
 

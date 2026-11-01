@@ -85,7 +85,8 @@ export async function ownerPost(origin: string, owner: Owner, path: string, body
 
 function cookieFrom(res: Response, prefix: string): string {
   const all = res.headers.getSetCookie();
-  const match = all.find((line) => line.startsWith(prefix));
+  // A hosted app names its session cookie with the __Host- prefix.
+  const match = all.find((line) => line.startsWith(prefix) || line.startsWith(`__Host-${prefix}`));
   if (!match) throw new Error(`no ${prefix} cookie`);
   return match.split(';')[0]!;
 }
@@ -111,7 +112,8 @@ export async function consent(
     const res = await fetch(new URL('/oauth/authorize', origin), {
       method: 'POST',
       redirect: 'manual',
-      headers: { 'content-type': 'application/x-www-form-urlencoded', cookie: flow, origin },
+      // Approval acts for the current browser session, so it carries the owner's session too.
+      headers: { 'content-type': 'application/x-www-form-urlencoded', cookie: `${flow}; ${owner.cookie}`, origin },
       body: new URLSearchParams([['request_id', requestId], ['csrf', csrf], ...fields]).toString(),
     });
     return { status: res.status, body: await res.text() };

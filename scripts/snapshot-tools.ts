@@ -2,10 +2,25 @@
 //
 //   CC_SDK_ORIGIN=http://127.0.0.1:4310 npx tsx scripts/snapshot-tools.ts
 //
-// It lists /mcp/open, creates one throwaway AI workspace there to get a key, and lists /mcp.
-// Point it at a LOCAL development server: it creates a workspace.
+// It lists /mcp/open, then lists /mcp twice and keeps both lists together: with one throwaway AI
+// workspace's key (only that lists the key tools) and with an OAuth grant of every scope to a
+// synthetic owner (tools/list offers only what a credential can call, so a key alone would leave
+// out the host tools, such as city_create_room).
+// Point it at a LOCAL development server: it creates a workspace and an account. Start it with the
+// optional tools on (CITY_INVITE_FLOW=1 CITY_ROOM_TASKS=1 CITY_ROOM_REPOS=1 CITY_BASE_WALLET=1
+// CITY_BASE_AGENT_PAY=1), or they are missing from the snapshot.
+import { randomUUID } from 'node:crypto';
 import { writeFileSync } from 'node:fs';
-import { HttpMcpTransport, bearer } from '../src/index.js';
+import { consent, registerOwner } from '../contract/harness.js';
+import {
+  HttpMcpTransport,
+  authorizationUrl,
+  bearer,
+  discover,
+  exchangeCode,
+  pkcePair,
+  registerClient,
+} from '../src/index.js';
 
 const origin = process.env.CC_SDK_ORIGIN ?? 'http://127.0.0.1:4310';
 type Tool = {
@@ -29,7 +44,35 @@ const open = await list(`${origin}/mcp/open`);
 const created = await new HttpMcpTransport({ endpoint: `${origin}/mcp/open` }).callTool<{
   workspace_key: string;
 }>('city_create_workspace', { name: 'SDK snapshot', idempotency_key: crypto.randomUUID() });
-const authenticated = await list(`${origin}/mcp`, created.workspace_key);
+const byName = new Map<string, Tool>();
+for (const tool of await list(`${origin}/mcp`, created.workspace_key)) byName.set(tool.name, tool);
+for (const tool of await list(`${origin}/mcp`, await fullGrant())) byName.set(tool.name, tool);
+const authenticated = [...byName.values()];
+
+/** An OAuth access token of a synthetic local owner, with every scope the server offers. */
+async function fullGrant(): Promise<string> {
+  const resource = await fetch(`${origin}/.well-known/oauth-protected-resource`);
+  const { scopes_supported: scopes } = (await resource.json()) as { scopes_supported: string[] };
+  const owner = await registerOwner(origin);
+  const metadata = await discover(origin);
+  const redirectUri = 'http://127.0.0.1:43123/callback';
+  const clientId = await registerClient(metadata, {
+    clientName: 'SDK snapshot',
+    redirectUris: [redirectUri],
+  });
+  const { verifier, challenge } = await pkcePair();
+  const url = authorizationUrl(metadata, {
+    clientId,
+    redirectUri,
+    scopes,
+    state: randomUUID(),
+    challenge,
+    origin,
+  });
+  const { code } = await consent(origin, owner, url, scopes);
+  const tokens = await exchangeCode(metadata, { clientId }, { code, verifier, redirectUri, origin, scopes });
+  return tokens.accessToken.reveal();
+}
 
 const shape = (tool: Tool) => ({
   name: tool.name,
