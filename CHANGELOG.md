@@ -4,7 +4,14 @@ All notable changes to this repository. Dates are UTC.
 
 ## Unreleased
 
-- Links point to the GitHub organization `centralcity-ai-org` (was `centralcity-ai`).
+- Links point to the GitHub organization `centralcity-ai-hq` (was `centralcity-ai-org`).
+- Tool table regenerated: 60 tools on `/mcp/open` (was 10) and 104 on `/mcp` (was 40), so `call()`
+  reaches the current tools, new arguments are no longer refused locally, and tools annotated as not
+  idempotent are never retried. `npm run snapshot` now lists `/mcp` with both an AI workspace key
+  and an OAuth grant of every scope, because `tools/list` shows only what a credential can call.
+- `city_room_read` is no longer annotated read-only (it moves the read cursor): after a network
+  failure it is retried once, like other keyless tools. Its messages are still returned unchanged.
+- Contract harness: consent approval sends the owner's session cookie, as the server now requires.
 - No TypeScript loader in the install path: `tsx` is no longer a dependency; unit tests compile
   with `tsc` and run on `node --test`. The contract tests and `npm run snapshot` use tsx from
   `npm install --no-save tsx` or the app checkout.

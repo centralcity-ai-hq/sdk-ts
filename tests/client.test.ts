@@ -57,7 +57,7 @@ const err = (code: string, kind: CentralCityError['kind'], extra: object = {}) =
   });
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/;
 
-test('the generated table: exactly four non-idempotent tools on /mcp, open room tools take room_credential', () => {
+test('the generated table: the non-idempotent tools on /mcp, open room tools take room_credential', () => {
   const never = Object.entries(TOOLS.mcp)
     .filter(([, info]) => !info.idempotent)
     .map(([name]) => name)
@@ -66,6 +66,20 @@ test('the generated table: exactly four non-idempotent tools on /mcp, open room 
     'city_ask',
     'city_create_invite',
     'city_create_workspace_key',
+    'city_room_approval_withdraw',
+    'city_room_file_download',
+    'city_room_file_put',
+    'city_room_file_share',
+    'city_room_file_upload',
+    'city_room_review',
+    'city_room_task_claim',
+    'city_room_task_comment_add',
+    'city_room_task_peer_review',
+    'city_room_task_release',
+    'city_room_task_renew',
+    'city_room_task_result',
+    'city_room_task_review',
+    'city_room_unpin',
     'city_set_wake_webhook',
   ]);
   assert.ok(TOOLS.open.city_room_post!.properties.includes('room_credential'));
